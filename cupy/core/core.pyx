@@ -268,9 +268,9 @@ cdef class ndarray:
             dtype: Type specifier.
             order ({'C', 'F', 'A', 'K'}): Row-major (C-style) or column-major
                 (Fortran-style) order.
-                When `order` is 'A', it uses 'F' if `a` is column-major and
-                uses `C` otherwise.
-                And when `order` is 'K', it keeps strides as closely as
+                When ``order`` is 'A', it uses 'F' if ``a`` is column-major and
+                uses 'C' otherwise.
+                And when ``order`` is 'K', it keeps strides as closely as
                 possible.
             copy (bool): If it is False and no cast happens, then this method
                 returns the array itself. Otherwise, a copy is returned.
@@ -348,8 +348,8 @@ cdef class ndarray:
         Args:
             order ({'C', 'F', 'A', 'K'}): Row-major (C-style) or column-major
                 (Fortran-style) order.
-                When `order` is 'A', it uses 'F' if `a` is column-major and
-                uses `C` otherwise.
+                When ``order`` is 'A', it uses 'F' if ``a`` is column-major and
+                uses 'C' otherwise.
                 And when `order` is 'K', it keeps strides as closely as
                 possible.
 
@@ -1878,19 +1878,22 @@ cdef _argmax = create_reduction_func(
 # Array creation routines
 # -----------------------------------------------------------------------------
 
-cpdef ndarray array(obj, dtype=None, bint copy=True, Py_ssize_t ndmin=0):
-    # TODO(beam2d): Support order and subok options
+cpdef ndarray array(obj, dtype=None, bint copy=True, str order='K',
+                    bint subok=False, Py_ssize_t ndmin=0):
+    # TODO(beam2d): Support subok options
     cdef Py_ssize_t nvidem
     cdef ndarray a, src
+    if subok:
+        raise NotImplementedError
     if isinstance(obj, ndarray):
         src = obj
         if dtype is None:
             dtype = src.dtype
         if (src.data.device is None or
                 src.data.device.id == device.get_device_id()):
-            a = src.astype(dtype, copy=copy)
+            a = src.astype(dtype, order=order, copy=copy)
         else:
-            a = src.copy().astype(dtype, copy=False)
+            a = src.copy(order=order).astype(dtype, copy=False)
 
         ndim = a._shape.size()
         if ndmin > ndim:
@@ -1900,12 +1903,15 @@ cpdef ndarray array(obj, dtype=None, bint copy=True, Py_ssize_t ndmin=0):
             a.shape = (1,) * (ndmin - ndim) + a.shape
         return a
     else:
-        a_cpu = numpy.array(obj, dtype=dtype, copy=False, order='C',
+        if order == 'K':
+            order = 'A'
+        a_cpu = numpy.array(obj, dtype=dtype, copy=False, order=order,
                             ndmin=ndmin)
+        order = 'C' if a_cpu.flags.c_contiguous else 'F'
         a_dtype = a_cpu.dtype
         if a_dtype.char not in '?bhilqBHILQefd':
             raise ValueError('Unsupported dtype %s' % a_dtype)
-        a = ndarray(a_cpu.shape, dtype=a_dtype)
+        a = ndarray(a_cpu.shape, dtype=a_dtype, order=order)
         if a_cpu.ndim == 0:
             a.fill(a_cpu[()])
             return a
