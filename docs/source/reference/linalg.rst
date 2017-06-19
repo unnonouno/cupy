@@ -11,12 +11,17 @@ Matrix and vector products
 .. autofunction:: cupy.tensordot
 
 Decompositions
---------------------------
+--------------
 
 .. autofunction:: cupy.linalg.cholesky
 .. autofunction:: cupy.linalg.qr
 .. autofunction:: cupy.linalg.svd
 
+Matrix eigenvalues
+------------------
+
+.. autofunction:: cupy.linalg.eigh
+.. autofunction:: cupy.linalg.eigvalsh
 
 Norms etc.
 ----------
