@@ -135,6 +135,14 @@ cdef extern from "cupy_cusparse.h":
         const double *csrSortedValA, const int *csrSortedRowPtrA,
         const int *csrSortedColIndA, double *A, int lda)
 
+    Status cusparseSnnz(
+        Handle handle, Direction dirA, int m, int n, const MatDescr descrA,
+        const float *A, int lda, int *nnzPerRowCol, int *nnzTotalDevHostPtr)
+
+    Status cusparseDnnz(
+        Handle handle, Direction dirA, int m, int n, const MatDescr descrA,
+        const double *A, int lda, int *nnzPerRowCol, int *nnzTotalDevHostPtr)
+
     Status cusparseCreateIdentityPermutation(
         Handle handle, int n, int *p)
 
@@ -497,6 +505,24 @@ cpdef dcsr2dense(
         <Handle>handle, m, n, <MatDescr>descrA,
         <const double *>csrSortedValA, <const int *>csrSortedRowPtrA,
         <const int *>csrSortedColIndA, <double *>A, lda)
+    check_status(status)
+
+
+cpdef snnz(
+        size_t handle, int dirA, int m, int n, size_t descrA,
+        size_t *A, int lda, size_t nnzPerRowCol, size_t nnzTotalDevHostPtr):
+    status = cusparseSnnz(
+        <Handle>handle, <Direction>dirA, m, n, <const MatDescr>descrA,
+        <const float *>A, lda, <int *>nnzPerRowCol, <int *>nnzTotalDevHostPtr)
+    check_status(status)
+
+
+cpdef dnnz(
+        size_t handle, int dirA, int m, int n, size_t descrA,
+        size_t *A, int lda, size_t nnzPerRowCol, size_t nnzTotalDevHostPtr):
+    status = cusparseDnnz(
+        <Handle>handle, <Direction>dirA, m, n, <const MatDescr>descrA,
+        <const double *>A, lda, <int *>nnzPerRowCol, <int *>nnzTotalDevHostPtr)
     check_status(status)
 
 
