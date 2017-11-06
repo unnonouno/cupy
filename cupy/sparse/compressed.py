@@ -21,6 +21,19 @@ class _compressed_sparse_matrix(sparse_data._data_matrix):
         'if (ind == minor) atomicAdd(&answer[0], d);',
         'compress_getitem', preamble=util._preamble_atomic_add)
 
+    _compress_sum_minor_kern = core.ElementwiseKernel(
+        'raw int32 indptr, raw T data', 'S sum',
+        '''
+        for (int j = indptr[i]; j < indptr[i + 1]; ++j) {
+          sum += data[j];
+        }
+        ''', 'compress_sum_minor')
+
+    _compress_sum_major_kern = core.ElementwiseKernel(
+        'int32 indices, T data', 'raw S sum',
+        'atomicAdd(&sum[indices], static_cast<S>(data));',
+        'compress_sum_major')
+
     def __init__(self, arg1, shape=None, dtype=None, copy=False):
         if shape is not None and len(shape) != 2:
             raise ValueError(
@@ -297,6 +310,31 @@ class _compressed_sparse_matrix(sparse_data._data_matrix):
             raise ValueError
 
     # TODO(unno): Implement sorted_indices
+
+    def _sum(self, axis=None, dtype=None, out=None):
+        major_axis, minor_axis = self._swap(0, 1)
+        major, minor = self._swap(*self.shape)
+        if isinstance(axis, int) and axis < 0:
+            axis += 2
+        if dtype is None:
+            dtype = self.dtype
+
+        if axis is None:
+            return self.data.sum(dtype=dtype, out=out)
+        elif axis == minor_axis:
+            shape = self._swap(major, 1)
+            if out is None:
+                out = cupy.zeros(shape, dtype=dtype)
+            self._compress_sum_minor_kern(self.indptr, self.data, out)
+            return out
+        elif axis == major_axis:
+            shape = self._swap(1, minor)
+            if out is None:
+                out = cupy.zeros(minor, dtype=dtype)
+            self._compress_sum_major_kern(self.indices, self.data, out)
+            return out.reshape(shape)
+        else:
+            raise ValueError('')
 
     def sum_duplicates(self):
         if self._has_canonical_format:
