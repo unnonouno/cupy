@@ -1380,6 +1380,14 @@ class TestFusionInputNum(unittest.TestCase):
         f(testing.shaped_arange((1,), numpy, 'f'))
         f(testing.shaped_arange((1,), cupy, 'f'))
 
+    def test_no_input(self):
+        @cupy.fuse(input_num=0)
+        def f(x):
+            return x
+
+        f(testing.shaped_arange((1,), numpy, 'f'))
+        f(testing.shaped_arange((1,), cupy, 'f'))
+
 
 @testing.gpu
 class TestFusionPythonConstant(unittest.TestCase):
