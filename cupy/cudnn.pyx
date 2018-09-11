@@ -488,18 +488,24 @@ cpdef bint is_tensor_core_available(dtype) except *:
 
 class DropoutStates(object):
 
-    def __init__(self, handle, seed):
+    def __init__(self, seed):
+        cdef size_t handle = get_handle()
         state_size = cudnn.dropoutGetStatesSize(handle)
         self._states = memory.alloc(state_size)
         self._desc = create_dropout_descriptor(
             handle, 0., self._states.ptr,
             state_size, seed)
 
-    def forward(self, handle, x, dropout_ratio):
+    def set_ratio(self, dropout_ratio):
+        cdef size_t handle = get_handle()
+        set_dropout_descriptor(self._desc, handle, dropout_ratio)
+
+    def forward(self, x, dropout_ratio):
+        handle = get_handle()
         if not isinstance(x, cupy.ndarray):
             raise TypeError('argument x must be an cupy.ndarray')
 
-        set_dropout_descriptor(self._desc, handle, dropout_ratio)
+        self.set_ratio(dropout_ratio)
 
         x = cupy.ascontiguousarray(x)
         y = cupy.empty_like(x)
@@ -516,11 +522,12 @@ class DropoutStates(object):
                              reserve_space.data.ptr, reserve_size)
         return (reserve_space, y)
 
-    def backward(self, handle, dy, dropout_ratio, reserve_space):
+    def backward(self, dy, dropout_ratio, reserve_space):
+        cdef size_t handle = get_handle()
         if not isinstance(dy, cupy.ndarray):
             raise TypeError('argument dy must be an cupy.ndarray')
 
-        set_dropout_descriptor(self._desc, handle, dropout_ratio)
+        self.set_ratio(dropout_ratio)
 
         dy = cupy.ascontiguousarray(dy)
         dx = cupy.empty_like(dy)
