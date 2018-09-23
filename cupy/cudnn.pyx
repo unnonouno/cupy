@@ -353,6 +353,12 @@ def rnn_forward_inference_ex(rnn_desc, lengths, xs, hx, cx, w):
 
 
 def rnn_forward_training_ex(rnn_desc, lengths, xs, hx, cx, w):
+    w = cuda.cupy.ascontiguousarray(w)
+    xs = cuda.cupy.ascontiguousarray(xs)
+    if cx is not None:
+        cx = cuda.cupy.ascontiguousarray(cx)
+    hx = cuda.cupy.ascontiguousarray(hx)
+
     c_x_descs = _make_tensor_descriptor_array(xs)
     reserve_size = libcudnn.getRNNTrainingReserveSize(
         handle, rnn_desc.value, length, c_x_descs.data)
