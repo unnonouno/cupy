@@ -359,6 +359,14 @@ def rnn_forward_training_ex(rnn_desc, lengths, xs, hx, cx, w):
         cx = cuda.cupy.ascontiguousarray(cx)
     hx = cuda.cupy.ascontiguousarray(hx)
 
+    # TODO(unno): Make a wrapper method to avoid access _desc directly
+    rnn_desc = libcudnn.create_rnn_descriptor(
+        n_units, n_layers, states._desc,
+        libcudnn.CUDNN_LINEAR_INPUT, rnn_dir,
+        rnn_mode, libcudnn.CUDNN_DATA_FLOAT)
+    libcudnn.setRNNPaddingMode(
+        rnn_desc.value, libcudnn.CUDNN_RNN_PADDED_IO_ENABLED)
+
     c_x_descs = _make_tensor_descriptor_array(xs)
     reserve_size = libcudnn.getRNNTrainingReserveSize(
         handle, rnn_desc.value, length, c_x_descs.data)
