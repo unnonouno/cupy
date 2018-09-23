@@ -353,6 +353,8 @@ def rnn_forward_inference_ex(rnn_desc, lengths, xs, hx, cx, w):
 
 
 def rnn_forward_training_ex(states, lengths, xs, hx, cx, w):
+    cdef int n_units, n_layers
+
     w = cuda.cupy.ascontiguousarray(w)
     xs = cuda.cupy.ascontiguousarray(xs)
     if cx is not None:
