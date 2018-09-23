@@ -349,7 +349,7 @@ def rnn_forward_inference_ex(rnn_desc, lengths, xs, hx, cx, w):
         0, 0, 0, 0, 0, 0, 0, 0,
         workspace.data.ptr, work_size)
 
-    return workspace, ys, hy, cy
+    return ys, hy, cy
 
 
 def rnn_forward_training_ex(rnn_desc, lengths, xs, hx, cx, w):
